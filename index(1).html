@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Antrenman Takip Demo</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: rgba(255, 255, 255, .09);
+      --panel-strong: rgba(255, 255, 255, .14);
+      --stroke: rgba(255, 255, 255, .16);
+      --text: #f8fafc;
+      --muted: #a7b0c3;
+      --primary: #7c3aed;
+      --primary-2: #06b6d4;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --shadow: 0 24px 80px rgba(0, 0, 0, .32);
+      --radius: 24px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(124,58,237,.40), transparent 34%),
+        radial-gradient(circle at top right, rgba(6,182,212,.28), transparent 32%),
+        linear-gradient(135deg, #070b16 0%, #111827 45%, #111122 100%);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent 75%);
+    }
+    .container { max-width: 1180px; margin: 0 auto; padding: 28px; position: relative; }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.075));
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+      backdrop-filter: blur(18px);
+    }
+    .login-box { max-width: 440px; margin: 72px auto; position: relative; }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid var(--stroke);
+      color: #dbeafe;
+      font-weight: 800;
+      letter-spacing: .2px;
+      margin-bottom: 16px;
+    }
+    .brand-icon {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      box-shadow: 0 10px 28px rgba(124,58,237,.35);
+    }
+    h1, h2, h3 { margin-top: 0; letter-spacing: -.03em; }
+    h1 { font-size: clamp(32px, 5vw, 56px); line-height: .95; margin-bottom: 10px; }
+    h2 { font-size: 26px; margin-bottom: 8px; }
+    h3 { font-size: 18px; margin-bottom: 8px; }
+    label { display: block; font-size: 13px; color: #cbd5e1; font-weight: 700; margin-top: 10px; }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 14px 14px;
+      margin-top: 8px;
+      margin-bottom: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.16);
+      font-size: 16px;
+      color: var(--text);
+    }
+    input, select, textarea {
+      background: rgba(15, 23, 42, .78);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(6,182,212,.75);
+      box-shadow: 0 0 0 4px rgba(6,182,212,.14);
+      background: rgba(15, 23, 42, .92);
+    }
+    textarea { min-height: 112px; resize: vertical; }
+    button {
+      background: linear-gradient(135deg, var(--primary), #2563eb);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 900;
+      min-height: 50px;
+      touch-action: manipulation;
+      box-shadow: 0 14px 30px rgba(37,99,235,.24);
+      transition: transform .18s, box-shadow .18s, filter .18s;
+    }
+    button:hover { transform: translateY(-2px); filter: brightness(1.06); box-shadow: 0 18px 42px rgba(37,99,235,.34); }
+    button.secondary { background: rgba(255,255,255,.10); border: 1px solid var(--stroke); box-shadow: none; }
+    button.light { background: rgba(255,255,255,.16); color: var(--text); box-shadow: none; }
+    button.danger { background: linear-gradient(135deg, #ef4444, #f97316); box-shadow: 0 14px 28px rgba(239,68,68,.24); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+    .profile { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+    .profile div, .stat-card {
+      background: rgba(15, 23, 42, .56);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      padding: 15px;
+    }
+    .profile b { color: #e2e8f0; font-size: 13px; }
+    .day {
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 22px;
+      padding: 18px;
+      cursor: pointer;
+      background: rgba(15, 23, 42, .56);
+      transition: .22s;
+      min-height: 128px;
+      position: relative;
+      overflow: hidden;
+    }
+    .day::after {
+      content: "";
+      position: absolute;
+      right: -22px;
+      bottom: -28px;
+      width: 90px;
+      height: 90px;
+      background: radial-gradient(circle, rgba(6,182,212,.24), transparent 66%);
+    }
+    .day:hover { border-color: rgba(6,182,212,.65); transform: translateY(-3px); }
+    .day.active { border-color: rgba(124,58,237,.90); background: linear-gradient(135deg, rgba(124,58,237,.32), rgba(6,182,212,.16)); }
+    .muted { color: var(--muted); font-size: 14px; }
+    .row { display: flex; gap: 12px; align-items: center; }
+    .topbar { align-items: flex-start; }
+    .topbar button { max-width: 124px; }
+    .row > * { flex: 1; }
+    .hidden { display: none; }
+    .exercise-item {
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background: rgba(15, 23, 42, .55);
+      box-shadow: 0 12px 26px rgba(0,0,0,.14);
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(6,182,212,.16);
+      color: #67e8f9;
+      border: 1px solid rgba(103,232,249,.18);
+      font-size: 12px;
+      font-weight: 800;
+      margin-top: 6px;
+    }
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+      padding: 10px;
+      border-radius: 22px;
+      background: rgba(15,23,42,.42);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(16px);
+    }
+    .tabs button { margin: 0; min-height: 46px; }
+    .tabs button.active {
+      background: linear-gradient(135deg, var(--primary), #2563eb);
+      color: white;
+      border: 1px solid rgba(255,255,255,.25);
+      box-shadow: 0 14px 30px rgba(37,99,235,.24);
+      filter: brightness(1.08);
+    }
+    .tabs button:not(.active) {
+      background: rgba(255,255,255,.10);
+      color: var(--text);
+      border: 1px solid var(--stroke);
+      box-shadow: none;
+    }
+    .success {
+      background: rgba(34,197,94,.14);
+      color: #bbf7d0;
+      border: 1px solid rgba(34,197,94,.25);
+      padding: 12px 14px;
+      border-radius: 16px;
+      margin-bottom: 12px;
+      display: none;
+      font-weight: 800;
+    }
+    ul { padding-left: 18px; color: #dbeafe; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; background: rgba(15,23,42,.55); border-radius: 18px; overflow: hidden; }
+    th, td { text-align: left; padding: 12px; border-bottom: 1px solid rgba(255,255,255,.10); white-space: nowrap; }
+    th { background: rgba(255,255,255,.08); color: #cbd5e1; font-size: 13px; }
+    .table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 18px; }
+
+    .item-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .item-actions button,
+    .item-actions .video-btn {
+      width: auto;
+      min-height: 38px;
+      padding: 9px 12px;
+      margin: 0;
+      border-radius: 12px;
+      font-size: 14px;
+      box-shadow: none;
+    }
+
+    .video-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 11px 13px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      text-decoration: none;
+      font-weight: 900;
+      margin-top: 8px;
+      box-shadow: 0 12px 24px rgba(220,38,38,.22);
+    }
+    .hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+    .stat-card strong { display: block; font-size: 24px; }
+
+    @media (max-width: 700px) {
+      .container { padding: 14px; padding-bottom: 106px; }
+      .card { border-radius: 22px; padding: 18px; margin-bottom: 12px; }
+      .login-box { margin: 24px 12px; max-width: none; }
+      h1 { font-size: 34px; line-height: 1; }
+      h2 { font-size: 22px; }
+      h3 { font-size: 17px; }
+      .row { display: block; }
+      .topbar { display: flex; gap: 12px; }
+      .topbar > div { flex: 1; }
+      .topbar button { width: auto; min-width: 88px; padding-left: 12px; padding-right: 12px; }
+      .profile { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .profile div { padding: 12px; overflow-wrap: anywhere; }
+      .grid { grid-template-columns: 1fr; gap: 10px; }
+      .day { min-height: auto; padding: 16px; }
+      .day:hover, button:hover { transform: none; }
+      .tabs {
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        z-index: 20;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 6px;
+        padding: 8px;
+        margin: 0;
+        border-radius: 24px;
+        background: rgba(15,23,42,.86);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 18px 50px rgba(0,0,0,.40);
+      }
+      .tabs button { font-size: 0; padding: 0; min-height: 52px; border-radius: 18px; position: relative; }
+      .tabs button::before { font-size: 20px; }
+      .tabs button:nth-child(1)::before { content: "👤"; }
+      .tabs button:nth-child(2)::before { content: "📅"; }
+      .tabs button:nth-child(3)::before { content: "➕"; }
+      .tabs button:nth-child(4)::before { content: "🏋️"; }
+      .tabs button:nth-child(5)::before { content: "🕘"; }
+      .tabs button:nth-child(6)::before { content: "📈"; }
+      .exercise-item { padding: 14px; }
+      .video-btn { width: 100%; text-align: center; }
+      textarea { min-height: 96px; }
+      .table-scroll { margin: 0 -4px; }
+      th, td { padding: 10px; font-size: 14px; }
+      .hero-stats { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 420px) {
+      .profile { grid-template-columns: 1fr; }
+      .tabs { grid-template-columns: repeat(6, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div id="login" class="login-box card">
+    <div class="brand"><span class="brand-icon">⚡</span> FitTrack Demo</div>
+    <h1>Antrenman Takip</h1>
+    <p class="muted">Demo giriş ekranı</p>
+    <label>Ad Soyad</label>
+    <input id="loginName" value="Hakan Keskinoğlu" />
+    <label>E-posta</label>
+    <input id="loginEmail" value="keskinogluhakan123@gmail.com" />
+    <button onclick="login()">Giriş Yap</button>
+  </div>
+
+  <div id="app" class="container hidden">
+    <div class="tabs">
+      <button data-tab="profile" onclick="showSection('profile')">Profil</button>
+      <button data-tab="weekly" onclick="showSection('weekly')">Haftalık Program</button>
+      <button data-tab="program" onclick="showSection('program')">Program Oluştur</button>
+      <button data-tab="exercise" onclick="showSection('exercise')">Egzersiz Ekle</button>
+      <button data-tab="history" onclick="showSection('history')">Antrenman Geçmişi</button>
+      <button data-tab="progress" onclick="showSection('progress')">İlerleme Takibi</button>
+    </div>
+
+    <div id="msg" class="success"></div>
+
+    <section id="profile" class="card hidden">
+      <div class="row topbar">
+        <div>
+          <div class="brand"><span class="brand-icon">🏋️</span> Haftalık performans paneli</div>
+          <h1>Dashboard</h1>
+          <p class="muted">Haftalık program, son kilolar, YouTube videoları ve ilerleme takibi.</p>
+          <div class="hero-stats">
+            <div class="stat-card"><span class="muted">Program</span><strong>7 Gün</strong></div>
+            <div class="stat-card"><span class="muted">Odak</span><strong>Kg Takibi</strong></div>
+            <div class="stat-card"><span class="muted">Demo</span><strong>Mobil</strong></div>
+          </div>
+        </div>
+        <button class="danger" onclick="logout()">Çıkış</button>
+      </div>
+      <h2>Profil Bilgileri</h2>
+      <div class="profile">
+        <div><b>Ad Soyad</b><br><span id="profileName"></span></div>
+        <div><b>E-posta</b><br><span id="profileEmail"></span></div>
+        <div><b>Boy</b><br>178 cm</div>
+        <div><b>Kilo</b><br>82 kg</div>
+        <div><b>Hedef</b><br>Kas kazanımı</div>
+      </div>
+    </section>
+
+    <section id="weekly" class="card">
+      <h2>Haftanın 7 Günü</h2>
+      <p class="muted">Bir güne tıklayınca o günün hareketleri listelenir.</p>
+      <div id="daysGrid" class="grid"></div>
+    </section>
+
+    <section id="dayDetail" class="card hidden">
+      <h2 id="selectedDayTitle"></h2>
+      <div id="selectedExercises"></div>
+      <button onclick="startWorkout()">Antrenmanı Başlat</button>
+    </section>
+
+    <section id="workoutForm" class="card hidden">
+      <h2>Antrenman Kaydı</h2>
+      <p class="muted">Seçilen günün hareketleri için gerçekleşen set/tekrar/kilo bilgilerini kaydet.</p>
+      <div id="workoutInputs"></div>
+      <button onclick="saveWorkoutLog()">Antrenmanı Kaydet</button>
+    </section>
+
+    <section id="program" class="card hidden">
+      <h2>Program Oluştur</h2>
+      <p class="muted">Gün seç, egzersiz seç, hedef set ve tekrar gir.</p>
+      <div class="row">
+        <div>
+          <label>Gün</label>
+          <select id="programDay"></select>
+        </div>
+        <div>
+          <label>Egzersiz</label>
+          <select id="programExercise"></select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Hedef Set</label>
+          <input id="targetSets" type="number" value="4" />
+        </div>
+        <div>
+          <label>Hedef Tekrar</label>
+          <input id="targetReps" type="number" value="8" />
+        </div>
+      </div>
+      <button onclick="addToProgram()">Programa Ekle</button>
+    </section>
+
+    <section id="exercise" class="card hidden">
+      <h2>Egzersiz Ekle</h2>
+      <label>Egzersiz Adı</label>
+      <input id="exerciseName" placeholder="Örn: Bench Press" />
+      <label>Kas Grubu</label>
+      <input id="muscleGroup" placeholder="Örn: Göğüs" />
+      <label>Açıklama</label>
+      <textarea id="exerciseDescription" placeholder="Kısa açıklama"></textarea>
+      <label>YouTube Video Linki</label>
+      <input id="exerciseVideo" placeholder="Örn: https://www.youtube.com/watch?v=..." />
+      <button onclick="addExercise()">Egzersizi Kaydet</button>
+      <h3>Kayıtlı Egzersizler</h3>
+      <div id="exerciseList"></div>
+    </section>
+
+    <section id="history" class="card hidden">
+      <h2>Antrenman Geçmişi</h2>
+      <div id="historyList"></div>
+    </section>
+
+    <section id="progress" class="card hidden">
+      <h2>İlerleme Takibi</h2>
+      <p class="muted">Bir hareket seç; son girilen kilo/tekrar ve geçmiş kayıtlar listelensin.</p>
+      <label>Egzersiz</label>
+      <select id="progressExercise" onchange="renderProgress()"></select>
+      <div id="progressDetail"></div>
+    </section>
+  </div>
+
+  <script>
+    const days = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
+    let selectedDay = 'Pazartesi';
+
+    const seed = {
+      user: null,
+      exercises: [
+        { id: 1, name: 'Bench Press', muscle: 'Göğüs', description: 'Barbell göğüs press', video: '' },
+        { id: 2, name: 'Incline Dumbbell Press', muscle: 'Göğüs', description: 'Üst göğüs hareketi', video: '' },
+        { id: 3, name: 'Triceps Pushdown', muscle: 'Arka Kol', description: 'Kablo ile triceps', video: '' },
+        { id: 4, name: 'Pull Up', muscle: 'Sırt', description: 'Vücut ağırlığı ile sırt', video: '' },
+        { id: 5, name: 'Squat', muscle: 'Bacak', description: 'Temel bacak hareketi', video: '' }
+      ],
+      program: {
+        'Pazartesi': [
+          { exerciseId: 1, sets: 4, reps: 8 },
+          { exerciseId: 2, sets: 3, reps: 10 },
+          { exerciseId: 3, sets: 3, reps: 12 }
+        ],
+        'Salı': [{ exerciseId: 4, sets: 4, reps: 8 }],
+        'Çarşamba': [],
+        'Perşembe': [{ exerciseId: 5, sets: 5, reps: 5 }],
+        'Cuma': [],
+        'Cumartesi': [],
+        'Pazar': []
+      },
+      logs: []
+    };
+
+    function getData() {
+      return JSON.parse(localStorage.getItem('workoutDemo')) || seed;
+    }
+    function setData(data) {
+      localStorage.setItem('workoutDemo', JSON.stringify(data));
+    }
+    function getYoutubeUrl(exercise) {
+      const video = (exercise?.video || '').trim();
+      if (video) return video;
+      return 'https://www.youtube.com/results?search_query=' + encodeURIComponent((exercise?.name || '') + ' exercise');
+    }
+    function login() {
+      const data = getData();
+      data.user = {
+        name: document.getElementById('loginName').value,
+        email: document.getElementById('loginEmail').value
+      };
+      setData(data);
+      init();
+    }
+    function logout() {
+      document.getElementById('login').classList.remove('hidden');
+      document.getElementById('app').classList.add('hidden');
+    }
+    function init() {
+      const data = getData();
+      if (!data.user) return;
+      document.getElementById('login').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      document.getElementById('profileName').textContent = data.user.name;
+      document.getElementById('profileEmail').textContent = data.user.email;
+      fillSelects();
+      renderDays();
+      renderExercises();
+      renderHistory();
+      showSection('profile');
+    }
+    function showSection(id) {
+      ['weekly','profile','program','exercise','history','progress','dayDetail','workoutForm'].forEach(x => {
+        const el = document.getElementById(x);
+        if (el) el.classList.add('hidden');
+      });
+
+      const section = document.getElementById(id);
+      if (section) section.classList.remove('hidden');
+
+      document.querySelectorAll('.tabs button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === id);
+      });
+
+      if (id === 'weekly') renderDayDetail(selectedDay);
+      if (id === 'progress') renderProgress();
+    }
+    function fillSelects() {
+      const data = getData();
+      document.getElementById('programDay').innerHTML = days.map(d => `<option>${d}</option>`).join('');
+      document.getElementById('programExercise').innerHTML = data.exercises.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+      document.getElementById('progressExercise').innerHTML = data.exercises.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+    }
+    function renderDays() {
+      const data = getData();
+      document.getElementById('daysGrid').innerHTML = days.map(day => {
+        const count = data.program[day]?.length || 0;
+        return `<div class="day ${day === selectedDay ? 'active' : ''}" onclick="renderDayDetail('${day}')">
+          <h3>${day}</h3>
+          <p class="muted">${count ? count + ' hareket' : 'Dinlenme / boş program'}</p>
+        </div>`;
+      }).join('');
+    }
+    function getExerciseRecords(exerciseId) {
+      const data = getData();
+      return data.logs
+        .flatMap(log => (log.exercises || [])
+          .filter(e => e.exerciseId == exerciseId || e.id == exerciseId)
+          .map(e => ({ ...e, date: log.date, day: log.day })))
+        .filter(e => Number(e.weight) > 0 || Number(e.reps) > 0);
+    }
+    function getLastRecord(exerciseId) {
+      return getExerciseRecords(exerciseId)[0] || null;
+    }
+    function lastRecordHtml(exerciseId) {
+      const last = getLastRecord(exerciseId);
+      if (!last) return '<p class="muted">Son kayıt: Henüz yok</p>';
+      return `<p class="muted">Son kayıt: <b>${last.weight || 0} kg x ${last.reps || 0} tekrar</b> · ${last.date}</p>`;
+    }
+    function renderDayDetail(day) {
+      selectedDay = day;
+      renderDays();
+      const data = getData();
+      const items = data.program[day] || [];
+      document.getElementById('dayDetail').classList.remove('hidden');
+      document.getElementById('selectedDayTitle').textContent = `${day} Antrenmanı`;
+      document.getElementById('selectedExercises').innerHTML = items.length ? items.map((item, i) => {
+        const ex = data.exercises.find(e => e.id == item.exerciseId);
+        return `<div class="exercise-item">
+          <b>${i + 1}. ${ex?.name || 'Silinmiş egzersiz'}</b><br>
+          <span class="muted">Hedef: ${item.sets} set x ${item.reps} tekrar</span><br>
+          <span class="tag">${ex?.muscle || '-'}</span>
+          <div class="item-actions">
+            <a class="video-btn" href="${getYoutubeUrl(ex)}" target="_blank" rel="noopener">YouTube’da Aç</a>
+            <button class="light" onclick="moveProgramExercise('${day}', ${i}, -1)" ${i === 0 ? 'disabled' : ''}>Yukarı</button>
+            <button class="light" onclick="moveProgramExercise('${day}', ${i}, 1)" ${i === items.length - 1 ? 'disabled' : ''}>Aşağı</button>
+            <button class="danger" onclick="removeProgramExercise('${day}', ${i})">Sil</button>
+          </div>
+        </div>`;
+      }).join('') : '<p>Bu gün için hareket eklenmemiş.</p>';
+    }
+    function moveProgramExercise(day, index, direction) {
+      const data = getData();
+      const items = data.program[day] || [];
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= items.length) return;
+      [items[index], items[newIndex]] = [items[newIndex], items[index]];
+      data.program[day] = items;
+      setData(data);
+      renderDayDetail(day);
+      showMsg('Hareket sırası güncellendi.');
+    }
+    function removeProgramExercise(day, index) {
+      const data = getData();
+      const items = data.program[day] || [];
+      const removed = items.splice(index, 1)[0];
+      data.program[day] = items;
+      setData(data);
+      renderDays();
+      renderDayDetail(day);
+      const ex = data.exercises.find(e => e.id == removed?.exerciseId);
+      showMsg(`${ex?.name || 'Hareket'} programdan silindi.`);
+    }
+    function addToProgram() {
+      const data = getData();
+      const day = document.getElementById('programDay').value;
+      const exerciseId = Number(document.getElementById('programExercise').value);
+      const sets = Number(document.getElementById('targetSets').value);
+      const reps = Number(document.getElementById('targetReps').value);
+      data.program[day] = data.program[day] || [];
+      data.program[day].push({ exerciseId, sets, reps });
+      setData(data);
+      selectedDay = day;
+      showMsg(`${day} programına hareket eklendi.`);
+      fillSelects();
+      renderDays();
+      renderDayDetail(day);
+      showSection('weekly');
+    }
+    function addExercise() {
+      const data = getData();
+      const name = document.getElementById('exerciseName').value.trim();
+      if (!name) return alert('Egzersiz adı zorunlu.');
+      data.exercises.push({
+        id: Date.now(),
+        name,
+        muscle: document.getElementById('muscleGroup').value,
+        description: document.getElementById('exerciseDescription').value,
+        video: document.getElementById('exerciseVideo').value.trim()
+      });
+      setData(data);
+      document.getElementById('exerciseName').value = '';
+      document.getElementById('muscleGroup').value = '';
+      document.getElementById('exerciseDescription').value = '';
+      document.getElementById('exerciseVideo').value = '';
+      showMsg('Egzersiz eklendi.');
+      fillSelects();
+      renderExercises();
+    }
+    function renderExercises() {
+      const data = getData();
+      document.getElementById('exerciseList').innerHTML = data.exercises.map(e => `
+        <div class="exercise-item">
+          <b>${e.name}</b><br>
+          <span class="tag">${e.muscle || '-'}</span>
+          <p class="muted">${e.description || ''}</p>
+          ${lastRecordHtml(e.id)}
+          <a class="video-btn" href="${getYoutubeUrl(e)}" target="_blank" rel="noopener">YouTube’da Aç</a>
+        </div>
+      `).join('');
+    }
+    function startWorkout() {
+      const data = getData();
+      const items = data.program[selectedDay] || [];
+      if (!items.length) return alert('Bu güne önce program ekleyin.');
+      document.getElementById('workoutForm').classList.remove('hidden');
+      document.getElementById('workoutInputs').innerHTML = items.map((item, i) => {
+        const ex = data.exercises.find(e => e.id == item.exerciseId);
+        const last = getLastRecord(item.exerciseId);
+        const defaultWeight = last?.weight ?? 0;
+        const defaultReps = last?.reps ?? item.reps;
+        return `<div class="exercise-item">
+          <h3>${ex?.name}</h3>
+          <div class="row">
+            <div><label>Set</label><input data-i="${i}" data-field="sets" type="number" value="${item.sets}"></div>
+            <div><label>Tekrar</label><input data-i="${i}" data-field="reps" type="number" value="${defaultReps}"></div>
+            <div><label>Kilo</label><input data-i="${i}" data-field="weight" type="number" value="${defaultWeight}"></div>
+          </div>
+        </div>`;
+      }).join('') + '<label>Not</label><textarea id="workoutNote" placeholder="Bugünkü antrenman notu"></textarea>';
+      document.getElementById('workoutForm').scrollIntoView({ behavior: 'smooth' });
+    }
+    function saveWorkoutLog() {
+      const data = getData();
+      const programItems = data.program[selectedDay] || [];
+      const inputs = [...document.querySelectorAll('#workoutInputs input')];
+      const performed = programItems.map((item, i) => {
+        const ex = data.exercises.find(e => e.id == item.exerciseId);
+        const get = field => inputs.find(inp => inp.dataset.i == i && inp.dataset.field == field)?.value;
+        return { exerciseId: item.exerciseId, name: ex?.name, sets: Number(get('sets')), reps: Number(get('reps')), weight: Number(get('weight')) };
+      });
+      data.logs.unshift({
+        id: Date.now(),
+        date: new Date().toLocaleDateString('tr-TR'),
+        day: selectedDay,
+        exercises: performed,
+        note: document.getElementById('workoutNote')?.value || ''
+      });
+      setData(data);
+      showMsg('Antrenman kaydı oluşturuldu.');
+      renderHistory();
+      renderExercises();
+      renderDayDetail(selectedDay);
+      showSection('history');
+    }
+    function renderHistory() {
+      const data = getData();
+      document.getElementById('historyList').innerHTML = data.logs.length ? data.logs.map(log => `
+        <div class="exercise-item">
+          <b>${log.date} - ${log.day}</b>
+          <ul>${log.exercises.map(e => `<li>${e.name}: ${e.sets} set x ${e.reps} tekrar / ${e.weight} kg</li>`).join('')}</ul>
+          <p class="muted">${log.note || ''}</p>
+        </div>
+      `).join('') : '<p>Henüz antrenman kaydı yok.</p>';
+    }
+    function openProgress(exerciseId) {
+      document.getElementById('progressExercise').value = String(exerciseId);
+      showSection('progress');
+    }
+    function renderProgress() {
+      const data = getData();
+      const exerciseId = document.getElementById('progressExercise').value || data.exercises[0]?.id;
+      if (!exerciseId) {
+        document.getElementById('progressDetail').innerHTML = '<p>Önce egzersiz ekleyin.</p>';
+        return;
+      }
+      const ex = data.exercises.find(e => e.id == exerciseId);
+      const records = getExerciseRecords(exerciseId);
+      const best = records.reduce((max, r) => Number(r.weight) > Number(max?.weight || 0) ? r : max, null);
+      document.getElementById('progressDetail').innerHTML = `
+        <div class="exercise-item">
+          <h3>${ex?.name || 'Egzersiz'}</h3>
+          ${lastRecordHtml(exerciseId)}
+          <p class="muted">En yüksek kilo: <b>${best ? best.weight + ' kg x ' + best.reps + ' tekrar' : 'Henüz yok'}</b></p>
+          <a class="video-btn" href="${getYoutubeUrl(ex)}" target="_blank" rel="noopener">YouTube’da Aç</a>
+        </div>
+        <h3>Kg Geçmişi</h3>
+        ${records.length ? `
+          <div class="table-scroll"><table>
+            <thead>
+              <tr>
+                <th>Tarih</th>
+                <th>Gün</th>
+                <th>Kg</th>
+                <th>Tekrar</th>
+                <th>Set</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${records.map(r => `
+                <tr>
+                  <td>${r.date}</td>
+                  <td>${r.day}</td>
+                  <td><b>${r.weight || 0} kg</b></td>
+                  <td>${r.reps || 0}</td>
+                  <td>${r.sets || 0}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table></div>
+        ` : '<p>Bu hareket için kayıt yok.</p>'}
+      `;
+    }
+    function showMsg(text) {
+      const msg = document.getElementById('msg');
+      msg.textContent = text;
+      msg.style.display = 'block';
+      setTimeout(() => msg.style.display = 'none', 2500);
+    }
+    init();
+  </script>
+</body>
+</html>
