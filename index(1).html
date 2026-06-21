@@ -116,6 +116,8 @@
     button.secondary { background: rgba(255,255,255,.10); border: 1px solid var(--stroke); box-shadow: none; }
     button.light { background: rgba(255,255,255,.16); color: var(--text); box-shadow: none; }
     button.danger { background: linear-gradient(135deg, #ef4444, #f97316); box-shadow: 0 14px 28px rgba(239,68,68,.24); }
+    button:disabled { opacity: .45; cursor: not-allowed; transform: none; filter: none; }
+    .auth-hint { display: block; margin-top: -4px; margin-bottom: 10px; color: var(--muted); font-size: 12px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
     .profile { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
     .profile div, .stat-card {
@@ -198,6 +200,21 @@
       border: 1px solid var(--stroke);
       box-shadow: none;
     }
+    .auth-status {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 16px;
+      margin: 12px 0;
+      font-weight: 800;
+      background: rgba(6,182,212,.14);
+      color: #cffafe;
+      border: 1px solid rgba(6,182,212,.25);
+    }
+    .auth-status.error {
+      background: rgba(239,68,68,.14);
+      color: #fecaca;
+      border-color: rgba(239,68,68,.28);
+    }
     .success {
       background: rgba(34,197,94,.14);
       color: #bbf7d0;
@@ -269,7 +286,7 @@
         right: 10px;
         bottom: 10px;
         z-index: 20;
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(7, 1fr);
         gap: 6px;
         padding: 8px;
         margin: 0;
@@ -286,6 +303,7 @@
       .tabs button:nth-child(4)::before { content: "🏋️"; }
       .tabs button:nth-child(5)::before { content: "🕘"; }
       .tabs button:nth-child(6)::before { content: "📈"; }
+      .tabs button:nth-child(7)::before { content: "👥"; }
       .exercise-item { padding: 14px; }
       .video-btn { width: 100%; text-align: center; }
       textarea { min-height: 96px; }
@@ -296,7 +314,7 @@
 
     @media (max-width: 420px) {
       .profile { grid-template-columns: 1fr; }
-      .tabs { grid-template-columns: repeat(6, 1fr); }
+      .tabs { grid-template-columns: repeat(7, 1fr); }
     }
   </style>
 </head>
@@ -304,12 +322,18 @@
   <div id="login" class="login-box card">
     <div class="brand"><span class="brand-icon">⚡</span> FitTrack Demo</div>
     <h1>Antrenman Takip</h1>
-    <p class="muted">Demo giriş ekranı</p>
+    <p class="muted">Firebase bağlantılı giriş ekranı. E-posta ve şifre ile giriş yapabilir veya yeni kullanıcı oluşturabilirsiniz.</p>
+    <div id="authStatus" class="auth-status"></div>
     <label>Ad Soyad</label>
     <input id="loginName" value="Hakan Keskinoğlu" />
     <label>E-posta</label>
-    <input id="loginEmail" value="keskinogluhakan123@gmail.com" />
+    <input id="loginEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" value="keskinogluhakan123@gmail.com" />
+    <span class="auth-hint">Örnek: adiniz@gmail.com — boşluk ve Türkçe karakter kullanmayın.</span>
+    <label>Şifre</label>
+    <input id="loginPassword" type="password" autocomplete="current-password" placeholder="En az 6 karakter" />
     <button onclick="login()">Giriş Yap</button>
+    <button class="secondary" onclick="registerUser()">Yeni Kullanıcı Oluştur</button>
+    <p class="muted">Yeni kullanıcı oluşturduğunuzda profil, program, egzersiz ve antrenman kayıtları Firestore database içine kullanıcı bazlı kaydedilir.</p>
   </div>
 
   <div id="app" class="container hidden">
@@ -320,6 +344,7 @@
       <button data-tab="exercise" onclick="showSection('exercise')">Egzersiz Ekle</button>
       <button data-tab="history" onclick="showSection('history')">Antrenman Geçmişi</button>
       <button data-tab="progress" onclick="showSection('progress')">İlerleme Takibi</button>
+      <button data-tab="admin" onclick="showSection('admin')">Kullanıcılar</button>
     </div>
 
     <div id="msg" class="success"></div>
@@ -420,9 +445,51 @@
       <select id="progressExercise" onchange="renderProgress()"></select>
       <div id="progressDetail"></div>
     </section>
+
+    <section id="admin" class="card hidden">
+      <h2>Kullanıcı Yönetimi</h2>
+      <p class="muted">Yeni kullanıcı oluşturabilir ve Firestore içindeki kayıtlı kullanıcı profillerini listeleyebilirsiniz.</p>
+      <div class="row">
+        <div>
+          <label>Yeni Kullanıcı Ad Soyad</label>
+          <input id="adminUserName" placeholder="Örn: Ahmet Yılmaz" />
+        </div>
+        <div>
+          <label>Yeni Kullanıcı E-posta</label>
+          <input id="adminUserEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="ornek@gmail.com" />
+        </div>
+      </div>
+      <label>Geçici Şifre</label>
+      <input id="adminUserPassword" type="password" autocomplete="new-password" placeholder="En az 6 karakter" />
+      <button onclick="createUserFromAdmin()">Kullanıcı Oluştur</button>
+      <button class="secondary" onclick="loadUsersList()">Kullanıcıları Yenile</button>
+      <h3>Kayıtlı Kullanıcılar</h3>
+      <div id="usersList"><p class="muted">Listelemek için Kullanıcıları Yenile butonuna basın.</p></div>
+      <p class="muted">Not: Web uygulamasından kullanıcı oluşturmak güvenlik nedeniyle oluşturan oturumu yeni kullanıcıya geçirir. Gerekirse tekrar kendi hesabınızla giriş yapın.</p>
+    </section>
   </div>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js';
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js';
+    import { getFirestore, doc, getDoc, setDoc, collection, getDocs, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDe-MvPZnqhz6Zq6NrhAGkKPGbLmdWLMNE",
+      authDomain: "fittoshkn.firebaseapp.com",
+      projectId: "fittoshkn",
+      storageBucket: "fittoshkn.firebasestorage.app",
+      messagingSenderId: "593137555729",
+      appId: "1:593137555729:web:e6d9eb52455a87c83054b0",
+      measurementId: "G-5BCXL8J8N8"
+    };
+
+    const firebaseReady = !firebaseConfig.apiKey.includes('BURAYA') && !firebaseConfig.projectId.includes('BURAYA');
+    const FIRESTORE_DATABASE_ID = 'hkn123';
+    const firebaseApp = firebaseReady ? initializeApp(firebaseConfig) : null;
+    const auth = firebaseReady ? getAuth(firebaseApp) : null;
+    const db = firebaseReady ? getFirestore(firebaseApp, FIRESTORE_DATABASE_ID) : null;
+
     const days = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
     let selectedDay = 'Pazartesi';
 
@@ -451,27 +518,173 @@
       logs: []
     };
 
-    function getData() {
-      return JSON.parse(localStorage.getItem('workoutDemo')) || seed;
+    let currentData = structuredClone(seed);
+    let currentUser = null;
+
+    function cloneSeed() {
+      return JSON.parse(JSON.stringify(seed));
     }
-    function setData(data) {
-      localStorage.setItem('workoutDemo', JSON.stringify(data));
+    function getData() {
+      return currentData || cloneSeed();
+    }
+    async function setData(data) {
+      currentData = data;
+      if (firebaseReady && currentUser) {
+        try {
+          await setDoc(doc(db, 'users', currentUser.uid), data, { merge: true });
+        } catch (err) {
+          localStorage.setItem('workoutDemoBackup', JSON.stringify(data));
+          showMsg('Veri Firebase’e yazılamadı. Firestore Rules ayarlarını kontrol edin.');
+          console.error('Firestore write error:', err);
+        }
+      } else {
+        localStorage.setItem('workoutDemo', JSON.stringify(data));
+      }
+    }
+    async function loadUserData(user) {
+      currentUser = user || null;
+      if (firebaseReady && user) {
+        const ref = doc(db, 'users', user.uid);
+        try {
+          const snap = await getDoc(ref);
+          if (snap.exists()) {
+            const saved = snap.data() || {};
+            currentData = {
+              ...cloneSeed(),
+              ...saved,
+              user: saved.user || { name: user.displayName || user.email, email: user.email }
+            };
+          } else {
+            currentData = cloneSeed();
+            currentData.user = {
+              name: user.displayName || document.getElementById('loginName').value.trim() || user.email,
+              email: user.email
+            };
+            await setDoc(ref, { ...currentData, createdAt: serverTimestamp(), uid: user.uid }, { merge: true });
+          }
+        } catch (err) {
+          console.error('Firestore read/create error:', err);
+          currentData = JSON.parse(localStorage.getItem('workoutDemoBackup') || 'null') || cloneSeed();
+          currentData.user = currentData.user || { name: user.displayName || user.email, email: user.email };
+          showAuthStatus('Giriş başarılı; ancak Firestore database okunamadı. Firestore Database ve Rules ayarlarını kontrol edin.', true);
+        }
+      } else {
+        currentData = JSON.parse(localStorage.getItem('workoutDemo')) || cloneSeed();
+      }
     }
     function getYoutubeUrl(exercise) {
       const video = (exercise?.video || '').trim();
       if (video) return video;
       return 'https://www.youtube.com/results?search_query=' + encodeURIComponent((exercise?.name || '') + ' exercise');
     }
-    function login() {
-      const data = getData();
-      data.user = {
-        name: document.getElementById('loginName').value,
-        email: document.getElementById('loginEmail').value
-      };
-      setData(data);
-      init();
+
+    function showAuthStatus(text, isError = false) {
+      const el = document.getElementById('authStatus');
+      if (!el) return;
+      el.textContent = text;
+      el.classList.toggle('error', Boolean(isError));
+      el.style.display = text ? 'block' : 'none';
     }
-    function logout() {
+
+    function normalizeEmail(value) {
+      return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .replace(/[ıİ]/g, 'i');
+    }
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+    function authErrorMessage(err) {
+      const code = err?.code || '';
+      const map = {
+        'auth/invalid-email': 'E-posta adresi geçersiz. Örnek: adiniz@gmail.com',
+        'auth/email-already-in-use': 'Bu e-posta ile zaten kullanıcı oluşturulmuş. Giriş Yap butonunu kullanın.',
+        'auth/weak-password': 'Şifre en az 6 karakter olmalı.',
+        'auth/missing-password': 'Şifre alanı boş olamaz.',
+        'auth/invalid-credential': 'E-posta veya şifre hatalı.',
+        'auth/user-not-found': 'Bu e-posta ile kayıtlı kullanıcı bulunamadı.',
+        'auth/wrong-password': 'Şifre hatalı.',
+        'auth/operation-not-allowed': 'Firebase Authentication içinde Email/Password giriş yöntemini aktif edin.',
+        'auth/network-request-failed': 'İnternet bağlantısı veya Firebase bağlantısı başarısız.',
+        'permission-denied': 'Firestore izinleri yetersiz. Firestore Rules ayarlarını kontrol edin.'
+      };
+      return map[code] || (err?.message || 'Bilinmeyen hata oluştu.');
+    }
+    function getLoginCredentials() {
+      const name = document.getElementById('loginName').value.trim();
+      const email = normalizeEmail(document.getElementById('loginEmail').value);
+      const password = document.getElementById('loginPassword').value;
+      document.getElementById('loginEmail').value = email;
+      return { name, email, password };
+    }
+    async function registerUser() {
+      const { name, email, password } = getLoginCredentials();
+      if (!name || !email || !password) {
+        showAuthStatus('Ad, e-posta ve şifre zorunlu.', true);
+        return;
+      }
+      if (!isValidEmail(email)) {
+        showAuthStatus('E-posta adresi geçersiz. Örnek: adiniz@gmail.com', true);
+        return;
+      }
+      if (password.length < 6) {
+        showAuthStatus('Şifre en az 6 karakter olmalı.', true);
+        return;
+      }
+      showAuthStatus('Kullanıcı oluşturuluyor...');
+      if (!firebaseReady) {
+        currentData = cloneSeed();
+        currentData.user = { name, email };
+        await setData(currentData);
+        init();
+        return showMsg('Demo kullanıcı oluşturuldu. Gerçek kayıt için Firebase config girin.');
+      }
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(cred.user, { displayName: name });
+        currentData = cloneSeed();
+        currentData.user = { name, email };
+        currentUser = cred.user;
+        await setDoc(doc(db, 'users', cred.user.uid), { ...currentData, createdAt: serverTimestamp(), uid: cred.user.uid }, { merge: true });
+        showAuthStatus('');
+        init();
+        showMsg('Kullanıcı oluşturuldu ve database kaydı açıldı.');
+      } catch (err) {
+        showAuthStatus('Kullanıcı oluşturulamadı: ' + authErrorMessage(err), true);
+      }
+    }
+    async function login() {
+      const { name, email, password } = getLoginCredentials();
+      if (!firebaseReady) {
+        currentData = JSON.parse(localStorage.getItem('workoutDemo')) || cloneSeed();
+        currentData.user = currentData.user || { name, email };
+        await setData(currentData);
+        init();
+        return;
+      }
+      if (!isValidEmail(email)) {
+        showAuthStatus('E-posta adresi geçersiz. Örnek: adiniz@gmail.com', true);
+        return;
+      }
+      if (!password) {
+        showAuthStatus('Şifre alanı boş olamaz.', true);
+        return;
+      }
+      showAuthStatus('Giriş yapılıyor...');
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        await loadUserData(cred.user);
+        showAuthStatus('');
+        init();
+      } catch (err) {
+        showAuthStatus('Giriş yapılamadı: ' + authErrorMessage(err), true);
+      }
+    }
+    async function logout() {
+      if (firebaseReady && auth) await signOut(auth);
+      currentUser = null;
       document.getElementById('login').classList.remove('hidden');
       document.getElementById('app').classList.add('hidden');
     }
@@ -489,7 +702,7 @@
       showSection('profile');
     }
     function showSection(id) {
-      ['weekly','profile','program','exercise','history','progress','dayDetail','workoutForm'].forEach(x => {
+      ['weekly','profile','program','exercise','history','progress','admin','dayDetail','workoutForm'].forEach(x => {
         const el = document.getElementById(x);
         if (el) el.classList.add('hidden');
       });
@@ -503,6 +716,7 @@
 
       if (id === 'weekly') renderDayDetail(selectedDay);
       if (id === 'progress') renderProgress();
+      if (id === 'admin') loadUsersList();
     }
     function fillSelects() {
       const data = getData();
@@ -558,29 +772,29 @@
         </div>`;
       }).join('') : '<p>Bu gün için hareket eklenmemiş.</p>';
     }
-    function moveProgramExercise(day, index, direction) {
+    async function moveProgramExercise(day, index, direction) {
       const data = getData();
       const items = data.program[day] || [];
       const newIndex = index + direction;
       if (newIndex < 0 || newIndex >= items.length) return;
       [items[index], items[newIndex]] = [items[newIndex], items[index]];
       data.program[day] = items;
-      setData(data);
+      await setData(data);
       renderDayDetail(day);
       showMsg('Hareket sırası güncellendi.');
     }
-    function removeProgramExercise(day, index) {
+    async function removeProgramExercise(day, index) {
       const data = getData();
       const items = data.program[day] || [];
       const removed = items.splice(index, 1)[0];
       data.program[day] = items;
-      setData(data);
+      await setData(data);
       renderDays();
       renderDayDetail(day);
       const ex = data.exercises.find(e => e.id == removed?.exerciseId);
       showMsg(`${ex?.name || 'Hareket'} programdan silindi.`);
     }
-    function addToProgram() {
+    async function addToProgram() {
       const data = getData();
       const day = document.getElementById('programDay').value;
       const exerciseId = Number(document.getElementById('programExercise').value);
@@ -588,7 +802,7 @@
       const reps = Number(document.getElementById('targetReps').value);
       data.program[day] = data.program[day] || [];
       data.program[day].push({ exerciseId, sets, reps });
-      setData(data);
+      await setData(data);
       selectedDay = day;
       showMsg(`${day} programına hareket eklendi.`);
       fillSelects();
@@ -596,7 +810,7 @@
       renderDayDetail(day);
       showSection('weekly');
     }
-    function addExercise() {
+    async function addExercise() {
       const data = getData();
       const name = document.getElementById('exerciseName').value.trim();
       if (!name) return alert('Egzersiz adı zorunlu.');
@@ -607,7 +821,7 @@
         description: document.getElementById('exerciseDescription').value,
         video: document.getElementById('exerciseVideo').value.trim()
       });
-      setData(data);
+      await setData(data);
       document.getElementById('exerciseName').value = '';
       document.getElementById('muscleGroup').value = '';
       document.getElementById('exerciseDescription').value = '';
@@ -649,7 +863,7 @@
       }).join('') + '<label>Not</label><textarea id="workoutNote" placeholder="Bugünkü antrenman notu"></textarea>';
       document.getElementById('workoutForm').scrollIntoView({ behavior: 'smooth' });
     }
-    function saveWorkoutLog() {
+    async function saveWorkoutLog() {
       const data = getData();
       const programItems = data.program[selectedDay] || [];
       const inputs = [...document.querySelectorAll('#workoutInputs input')];
@@ -665,7 +879,7 @@
         exercises: performed,
         note: document.getElementById('workoutNote')?.value || ''
       });
-      setData(data);
+      await setData(data);
       showMsg('Antrenman kaydı oluşturuldu.');
       renderHistory();
       renderExercises();
@@ -730,13 +944,102 @@
         ` : '<p>Bu hareket için kayıt yok.</p>'}
       `;
     }
+
+    async function createUserFromAdmin() {
+      const name = document.getElementById('adminUserName').value.trim();
+      const email = normalizeEmail(document.getElementById('adminUserEmail').value);
+      const password = document.getElementById('adminUserPassword').value;
+      document.getElementById('adminUserEmail').value = email;
+      if (!name || !email || !password) return alert('Ad, e-posta ve şifre zorunlu.');
+      if (!isValidEmail(email)) return alert('E-posta adresi geçersiz. Örnek: adiniz@gmail.com');
+      if (password.length < 6) return alert('Şifre en az 6 karakter olmalı.');
+      if (!firebaseReady) return alert('Kullanıcı oluşturmak için Firebase bağlantısı aktif olmalı.');
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(cred.user, { displayName: name });
+        const newUserData = cloneSeed();
+        newUserData.user = { name, email };
+        currentUser = cred.user;
+        currentData = newUserData;
+        await setDoc(doc(db, 'users', cred.user.uid), { ...newUserData, createdAt: serverTimestamp(), uid: cred.user.uid }, { merge: true });
+        document.getElementById('adminUserName').value = '';
+        document.getElementById('adminUserEmail').value = '';
+        document.getElementById('adminUserPassword').value = '';
+        init();
+        showSection('admin');
+        showMsg('Yeni kullanıcı oluşturuldu. Oturum yeni kullanıcıya geçti.');
+        await loadUsersList();
+      } catch (err) {
+        alert('Kullanıcı oluşturulamadı: ' + authErrorMessage(err));
+      }
+    }
+    async function loadUsersList() {
+      const target = document.getElementById('usersList');
+      if (!target) return;
+      if (!firebaseReady || !currentUser) {
+        target.innerHTML = '<p class="muted">Kullanıcı listesini görmek için Firebase ile giriş yapın.</p>';
+        return;
+      }
+      try {
+        const snap = await getDocs(collection(db, 'users'));
+        const rows = [];
+        snap.forEach(d => {
+          const userData = d.data() || {};
+          rows.push({
+            uid: d.id,
+            name: userData.user?.name || '-',
+            email: userData.user?.email || '-',
+            exerciseCount: (userData.exercises || []).length,
+            logCount: (userData.logs || []).length
+          });
+        });
+        target.innerHTML = rows.length ? `
+          <div class="table-scroll"><table>
+            <thead><tr><th>Ad Soyad</th><th>E-posta</th><th>Egzersiz</th><th>Kayıt</th></tr></thead>
+            <tbody>${rows.map(u => `<tr><td>${u.name}</td><td>${u.email}</td><td>${u.exerciseCount}</td><td>${u.logCount}</td></tr>`).join('')}</tbody>
+          </table></div>
+        ` : '<p>Kayıtlı kullanıcı yok.</p>';
+      } catch (err) {
+        target.innerHTML = '<p class="muted">Kullanıcı listesi okunamadı. Firestore Rules izinlerini kontrol edin.</p>';
+      }
+    }
+
     function showMsg(text) {
       const msg = document.getElementById('msg');
       msg.textContent = text;
       msg.style.display = 'block';
       setTimeout(() => msg.style.display = 'none', 2500);
     }
-    init();
+    if (firebaseReady && auth) {
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          try {
+            await loadUserData(user);
+            init();
+          } catch (err) {
+            console.error('Auth state error:', err);
+            showAuthStatus('Oturum açıldı ama uygulama başlatılamadı: ' + authErrorMessage(err), true);
+          }
+        }
+      });
+    } else {
+      loadUserData(null).then(init);
+    }
+
+    window.login = login;
+    window.registerUser = registerUser;
+    window.logout = logout;
+    window.showSection = showSection;
+    window.renderProgress = renderProgress;
+    window.startWorkout = startWorkout;
+    window.saveWorkoutLog = saveWorkoutLog;
+    window.addToProgram = addToProgram;
+    window.addExercise = addExercise;
+    window.renderDayDetail = renderDayDetail;
+    window.moveProgramExercise = moveProgramExercise;
+    window.removeProgramExercise = removeProgramExercise;
+    window.createUserFromAdmin = createUserFromAdmin;
+    window.loadUsersList = loadUsersList;
   </script>
 </body>
 </html>
